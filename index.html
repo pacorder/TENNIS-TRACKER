@@ -3,216 +3,279 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Estadísticas de Tenis - Gráfico Radar</title>
+    <title>Estadísticas de Tenis - Dashboard</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-    <div class="app-container">
-        <!-- Header -->
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay hidden">
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <p>Guardando en Google Sheets...</p>
+        </div>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <div class="container">
         <header class="app-header">
-            <h1>🎾 Estadísticas de Tenis - Gráfico Radar</h1>
-            <p>Visualiza el rendimiento de tu jugador como en los videojuegos deportivos</p>
+            <h1>🎾 Dashboard de Estadísticas de Tenis</h1>
+            <p>Analiza y mejora tu rendimiento deportivo con estadísticas detalladas</p>
         </header>
 
-        <!-- Main Content -->
-        <main class="app-main">
-            <!-- Left Panel - Data Input -->
-            <aside class="input-panel">
+        <main class="main-content">
+            <!-- Panel Izquierdo: Información del Jugador y Controles -->
+            <section class="input-panel">
                 <div class="card">
                     <div class="card__header">
-                        <h2>Información del Jugador</h2>
+                        <h2>👤 Información del Jugador</h2>
                     </div>
                     <div class="card__body">
-                        <form id="playerForm" class="player-form">
-                            <div class="form-group">
-                                <label class="form-label" for="playerName">Nombre del Jugador</label>
-                                <input type="text" id="playerName" class="form-control" placeholder="Ingresa el nombre">
-                            </div>
-                            
-                            <div class="form-group">
-                                <label class="form-label" for="playerAge">Edad</label>
-                                <input type="number" id="playerAge" class="form-control" min="8" max="18" placeholder="Edad">
-                            </div>
-
-                            <h3>Estadísticas</h3>
-                            
-                            <div class="stats-inputs">
-                                <div class="stat-input">
-                                    <label class="form-label">Primer Saque (%)</label>
-                                    <div class="input-group">
-                                        <input type="range" id="primerSaque" min="0" max="100" value="65" class="stat-slider">
-                                        <span class="stat-value">65%</span>
-                                    </div>
-                                </div>
-
-                                <div class="stat-input">
-                                    <label class="form-label">Puntos 1er Saque (%)</label>
-                                    <div class="input-group">
-                                        <input type="range" id="puntosPrimerSaque" min="0" max="100" value="70" class="stat-slider">
-                                        <span class="stat-value">70%</span>
-                                    </div>
-                                </div>
-
-                                <div class="stat-input">
-                                    <label class="form-label">Puntos Resto (%)</label>
-                                    <div class="input-group">
-                                        <input type="range" id="puntosResto" min="0" max="100" value="40" class="stat-slider">
-                                        <span class="stat-value">40%</span>
-                                    </div>
-                                </div>
-
-                                <div class="stat-input">
-                                    <label class="form-label">Winners por Partido</label>
-                                    <div class="input-group">
-                                        <input type="range" id="winners" min="0" max="50" value="15" class="stat-slider">
-                                        <span class="stat-value">15</span>
-                                    </div>
-                                </div>
-
-                                <div class="stat-input">
-                                    <label class="form-label">Velocidad (km/h)</label>
-                                    <div class="input-group">
-                                        <input type="range" id="velocidad" min="0" max="30" value="12" class="stat-slider">
-                                        <span class="stat-value">12 km/h</span>
-                                    </div>
-                                </div>
-
-                                <div class="stat-input">
-                                    <label class="form-label">Concentración (1-10)</label>
-                                    <div class="input-group">
-                                        <input type="range" id="concentracion" min="1" max="10" value="6" class="stat-slider">
-                                        <span class="stat-value">6/10</span>
-                                    </div>
-                                </div>
-
-                                <div class="stat-input">
-                                    <label class="form-label">Resistencia (1-10)</label>
-                                    <div class="input-group">
-                                        <input type="range" id="resistencia" min="1" max="10" value="7" class="stat-slider">
-                                        <span class="stat-value">7/10</span>
-                                    </div>
-                                </div>
-
-                                <div class="stat-input">
-                                    <label class="form-label">Adaptabilidad (1-10)</label>
-                                    <div class="input-group">
-                                        <input type="range" id="adaptabilidad" min="1" max="10" value="7" class="stat-slider">
-                                        <span class="stat-value">7/10</span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="button-group">
-                                <button type="button" id="updateChart" class="btn btn--primary">Actualizar Gráfico</button>
-                                <button type="button" id="exportChart" class="btn btn--outline">Exportar Imagen</button>
-                            </div>
-                        </form>
-
-                        <div class="example-players">
-                            <h3>Jugadores de Ejemplo</h3>
-                            <div class="example-buttons">
-                                <button class="btn btn--sm btn--secondary" data-player="0">Ana García</button>
-                                <button class="btn btn--sm btn--secondary" data-player="1">Carlos Ruiz</button>
-                                <button class="btn btn--sm btn--secondary" data-player="2">Sofia Martinez</button>
+                        <div class="form-group">
+                            <label class="form-label" for="playerName">Nombre:</label>
+                            <input type="text" id="playerName" class="form-control" placeholder="Ingresa tu nombre">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="playerAge">Edad:</label>
+                            <input type="number" id="playerAge" class="form-control" min="5" max="99" placeholder="Edad">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="playerLevel">Nivel:</label>
+                            <select id="playerLevel" class="form-control">
+                                <option value="">Selecciona nivel</option>
+                                <option value="Principiante">Principiante</option>
+                                <option value="Intermedio">Intermedio</option>
+                                <option value="Avanzado">Avanzado</option>
+                                <option value="Profesional">Profesional</option>
+                            </select>
+                        </div>
+                        
+                        <div class="example-profiles">
+                            <h3>📋 Perfiles de Ejemplo</h3>
+                            <div class="profile-buttons">
+                                <button class="btn btn--sm btn--outline" onclick="loadExamplePlayer('Ana García')">Ana García</button>
+                                <button class="btn btn--sm btn--outline" onclick="loadExamplePlayer('Carlos Ruiz')">Carlos Ruiz</button>
+                                <button class="btn btn--sm btn--outline" onclick="loadExamplePlayer('Sofia Martinez')">Sofia Martinez</button>
                             </div>
                         </div>
                     </div>
                 </div>
-            </aside>
 
-            <!-- Center Panel - Radar Chart -->
-            <section class="chart-panel">
-                <div class="card">
+                <div class="card mt-16">
                     <div class="card__header">
-                        <h2 id="chartTitle">Gráfico Radar - Jugador Ejemplo</h2>
-                        <div class="chart-info">
-                            <span id="playerInfo">Edad: 14 años</span>
-                            <div class="status status--info" id="overallScore">Puntuación General: 68/100</div>
-                        </div>
+                        <h2>📊 Controles de Estadísticas</h2>
                     </div>
                     <div class="card__body">
-                        <div class="chart-container" style="position: relative; height: 400px;">
-                            <canvas id="radarChart"></canvas>
+                        <div class="stats-controls">
+                            <div class="stat-control">
+                                <label class="form-label">Primer Saque (%):</label>
+                                <div class="control-group">
+                                    <input type="range" id="primerSaque" class="slider" min="0" max="100" value="65">
+                                    <input type="number" id="primerSaqueNum" class="number-input" min="0" max="100" value="65">
+                                </div>
+                            </div>
+
+                            <div class="stat-control">
+                                <label class="form-label">Puntos Ganados 1er Saque (%):</label>
+                                <div class="control-group">
+                                    <input type="range" id="puntosPrimerSaque" class="slider" min="0" max="100" value="70">
+                                    <input type="number" id="puntosPrimerSaqueNum" class="number-input" min="0" max="100" value="70">
+                                </div>
+                            </div>
+
+                            <div class="stat-control">
+                                <label class="form-label">Puntos Ganados Resto (%):</label>
+                                <div class="control-group">
+                                    <input type="range" id="puntosResto" class="slider" min="0" max="100" value="40">
+                                    <input type="number" id="puntosRestoNum" class="number-input" min="0" max="100" value="40">
+                                </div>
+                            </div>
+
+                            <div class="stat-control">
+                                <label class="form-label">Winners por Partido:</label>
+                                <div class="control-group">
+                                    <input type="range" id="winners" class="slider" min="0" max="50" value="15">
+                                    <input type="number" id="winnersNum" class="number-input" min="0" max="50" value="15">
+                                </div>
+                            </div>
+
+                            <div class="stat-control">
+                                <label class="form-label">Velocidad (km/h):</label>
+                                <div class="control-group">
+                                    <input type="range" id="velocidad" class="slider" min="5" max="25" value="12">
+                                    <input type="number" id="velocidadNum" class="number-input" min="5" max="25" value="12">
+                                </div>
+                            </div>
+
+                            <div class="stat-control">
+                                <label class="form-label">Concentración (1-10):</label>
+                                <div class="control-group">
+                                    <input type="range" id="concentracion" class="slider" min="1" max="10" value="6">
+                                    <input type="number" id="concentracionNum" class="number-input" min="1" max="10" value="6">
+                                </div>
+                            </div>
+
+                            <div class="stat-control">
+                                <label class="form-label">Resistencia (1-10):</label>
+                                <div class="control-group">
+                                    <input type="range" id="resistencia" class="slider" min="1" max="10" value="7">
+                                    <input type="number" id="resistenciaNum" class="number-input" min="1" max="10" value="7">
+                                </div>
+                            </div>
+
+                            <div class="stat-control">
+                                <label class="form-label">Adaptabilidad (1-10):</label>
+                                <div class="control-group">
+                                    <input type="range" id="adaptabilidad" class="slider" min="1" max="10" value="7">
+                                    <input type="number" id="adaptabilidadNum" class="number-input" min="1" max="10" value="7">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sección Google Sheets -->
+                <div class="card mt-16">
+                    <div class="card__header">
+                        <h2>📈 Google Sheets</h2>
+                    </div>
+                    <div class="card__body">
+                        <div class="connection-status">
+                            <div class="status status--success">
+                                <span class="status-dot"></span>
+                                Conectado (URL fija)
+                            </div>
+                        </div>
+                        
+                        <div class="sheets-controls mt-16">
+                            <button id="saveToSheets" class="btn btn--primary btn--full-width">
+                                💾 Guardar en Sheets
+                            </button>
+                            
+                            <div class="auto-save-toggle mt-16">
+                                <label class="toggle-label">
+                                    <input type="checkbox" id="autoSave" class="toggle-checkbox">
+                                    <span class="toggle-slider"></span>
+                                    Auto-guardar
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="history-section mt-16">
+                            <h3>📝 Historial (últimas 5 entradas)</h3>
+                            <div id="historyList" class="history-list">
+                                <p class="text-muted">No hay entradas guardadas aún</p>
+                            </div>
                         </div>
                     </div>
                 </div>
             </section>
 
-            <!-- Right Panel - Statistics -->
-            <aside class="stats-panel">
+            <!-- Panel Central: Gráfico Radar -->
+            <section class="chart-panel">
                 <div class="card">
                     <div class="card__header">
-                        <h2>Estadísticas Detalladas</h2>
+                        <h2>🎯 Gráfico de Rendimiento</h2>
                     </div>
                     <div class="card__body">
-                        <div class="stats-table">
-                            <div class="stat-row">
-                                <span class="stat-name">Primer Saque</span>
-                                <span class="stat-value-display" id="stat-primer-saque">65%</span>
-                                <span class="status status--warning" id="level-primer-saque">Promedio</span>
-                            </div>
-                            <div class="stat-row">
-                                <span class="stat-name">Puntos 1er Saque</span>
-                                <span class="stat-value-display" id="stat-puntos-primer-saque">70%</span>
-                                <span class="status status--success" id="level-puntos-primer-saque">Bueno</span>
-                            </div>
-                            <div class="stat-row">
-                                <span class="stat-name">Puntos Resto</span>
-                                <span class="stat-value-display" id="stat-puntos-resto">40%</span>
-                                <span class="status status--warning" id="level-puntos-resto">Promedio</span>
-                            </div>
-                            <div class="stat-row">
-                                <span class="stat-name">Winners por Partido</span>
-                                <span class="stat-value-display" id="stat-winners">15</span>
-                                <span class="status status--warning" id="level-winners">Promedio</span>
-                            </div>
-                            <div class="stat-row">
-                                <span class="stat-name">Velocidad</span>
-                                <span class="stat-value-display" id="stat-velocidad">12 km/h</span>
-                                <span class="status status--warning" id="level-velocidad">Promedio</span>
-                            </div>
-                            <div class="stat-row">
-                                <span class="stat-name">Concentración</span>
-                                <span class="stat-value-display" id="stat-concentracion">6/10</span>
-                                <span class="status status--warning" id="level-concentracion">Promedio</span>
-                            </div>
-                            <div class="stat-row">
-                                <span class="stat-name">Resistencia</span>
-                                <span class="stat-value-display" id="stat-resistencia">7/10</span>
-                                <span class="status status--success" id="level-resistencia">Bueno</span>
-                            </div>
-                            <div class="stat-row">
-                                <span class="stat-name">Adaptabilidad</span>
-                                <span class="stat-value-display" id="stat-adaptabilidad">7/10</span>
-                                <span class="status status--success" id="level-adaptabilidad">Bueno</span>
+                        <div class="chart-container" style="position: relative; height: 400px;">
+                            <canvas id="radarChart"></canvas>
+                        </div>
+                        <div class="overall-score mt-16">
+                            <h3>Puntuación General: <span id="overallScore">62.5</span>/100</h3>
+                            <div class="score-bar">
+                                <div id="scoreProgress" class="score-progress"></div>
                             </div>
                         </div>
+                    </div>
+                </div>
+            </section>
 
-                        <div class="comparison-info">
-                            <h3>Valores de Referencia</h3>
-                            <div class="reference-levels">
-                                <div class="level-indicator">
-                                    <span class="status status--error">Necesita Mejora</span>
-                                    <span class="level-range">0-40</span>
+            <!-- Panel Derecho: Estadísticas Numéricas -->
+            <section class="stats-panel">
+                <div class="card">
+                    <div class="card__header">
+                        <h2>📋 Estadísticas Detalladas</h2>
+                    </div>
+                    <div class="card__body">
+                        <div class="stats-grid">
+                            <div class="stat-item">
+                                <div class="stat-icon">🎾</div>
+                                <div class="stat-info">
+                                    <span class="stat-label">Primer Saque</span>
+                                    <span class="stat-value" id="statPrimerSaque">65%</span>
+                                    <span class="stat-rating good" id="ratingPrimerSaque">Bueno</span>
                                 </div>
-                                <div class="level-indicator">
-                                    <span class="status status--warning">Promedio</span>
-                                    <span class="level-range">41-70</span>
+                            </div>
+
+                            <div class="stat-item">
+                                <div class="stat-icon">💪</div>
+                                <div class="stat-info">
+                                    <span class="stat-label">Puntos 1er Saque</span>
+                                    <span class="stat-value" id="statPuntosPrimerSaque">70%</span>
+                                    <span class="stat-rating good" id="ratingPuntosPrimerSaque">Bueno</span>
                                 </div>
-                                <div class="level-indicator">
-                                    <span class="status status--success">Bueno</span>
-                                    <span class="level-range">71-85</span>
+                            </div>
+
+                            <div class="stat-item">
+                                <div class="stat-icon">🔄</div>
+                                <div class="stat-info">
+                                    <span class="stat-label">Puntos Resto</span>
+                                    <span class="stat-value" id="statPuntosResto">40%</span>
+                                    <span class="stat-rating average" id="ratingPuntosResto">Regular</span>
                                 </div>
-                                <div class="level-indicator">
-                                    <span class="status status--info">Excelente</span>
-                                    <span class="level-range">86-100</span>
+                            </div>
+
+                            <div class="stat-item">
+                                <div class="stat-icon">⚡</div>
+                                <div class="stat-info">
+                                    <span class="stat-label">Winners</span>
+                                    <span class="stat-value" id="statWinners">15</span>
+                                    <span class="stat-rating good" id="ratingWinners">Bueno</span>
+                                </div>
+                            </div>
+
+                            <div class="stat-item">
+                                <div class="stat-icon">🚀</div>
+                                <div class="stat-info">
+                                    <span class="stat-label">Velocidad</span>
+                                    <span class="stat-value" id="statVelocidad">12 km/h</span>
+                                    <span class="stat-rating average" id="ratingVelocidad">Regular</span>
+                                </div>
+                            </div>
+
+                            <div class="stat-item">
+                                <div class="stat-icon">🧠</div>
+                                <div class="stat-info">
+                                    <span class="stat-label">Concentración</span>
+                                    <span class="stat-value" id="statConcentracion">6/10</span>
+                                    <span class="stat-rating average" id="ratingConcentracion">Regular</span>
+                                </div>
+                            </div>
+
+                            <div class="stat-item">
+                                <div class="stat-icon">💨</div>
+                                <div class="stat-info">
+                                    <span class="stat-label">Resistencia</span>
+                                    <span class="stat-value" id="statResistencia">7/10</span>
+                                    <span class="stat-rating good" id="ratingResistencia">Bueno</span>
+                                </div>
+                            </div>
+
+                            <div class="stat-item">
+                                <div class="stat-icon">🔄</div>
+                                <div class="stat-info">
+                                    <span class="stat-label">Adaptabilidad</span>
+                                    <span class="stat-value" id="statAdaptabilidad">7/10</span>
+                                    <span class="stat-rating good" id="ratingAdaptabilidad">Bueno</span>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
-            </aside>
+            </section>
         </main>
     </div>
 

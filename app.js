@@ -1,456 +1,549 @@
-// Application Data
-const applicationData = {
-  "example_players": [
-    {
-      "name": "Ana García",
-      "age": 13,
-      "level": "Principiante",
-      "stats": {
-        "Primer Saque (%)": 55,
-        "Puntos Ganados Primer Saque (%)": 60,
-        "Puntos Ganados Resto (%)": 30,
-        "Winners por Partido": 8,
-        "Velocidad (km/h)": 10,
-        "Concentración (1-10)": 5,
-        "Resistencia (1-10)": 6,
-        "Adaptabilidad (1-10)": 5
-      }
+// Configuración fija de la aplicación
+const APP_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz4FImgcSvk5VDvhSuylGrpnJlHyi0g1FY9a9zp0YPWBaGPcQO2enI1T4G1p5R07e9qBQ/exec";
+
+// Datos de ejemplo
+const EXAMPLE_PLAYERS = {
+    "Ana García": {
+        name: "Ana García",
+        age: 13,
+        level: "Principiante",
+        stats: {
+            "Primer Saque (%)": 55,
+            "Puntos Ganados Primer Saque (%)": 60,
+            "Puntos Ganados Resto (%)": 30,
+            "Winners por Partido": 8,
+            "Velocidad (km/h)": 10,
+            "Concentración (1-10)": 5,
+            "Resistencia (1-10)": 6,
+            "Adaptabilidad (1-10)": 5
+        }
     },
-    {
-      "name": "Carlos Ruiz",
-      "age": 15,
-      "level": "Intermedio",
-      "stats": {
-        "Primer Saque (%)": 70,
-        "Puntos Ganados Primer Saque (%)": 75,
-        "Puntos Ganados Resto (%)": 40,
-        "Winners por Partido": 18,
-        "Velocidad (km/h)": 15,
-        "Concentración (1-10)": 7,
-        "Resistencia (1-10)": 8,
-        "Adaptabilidad (1-10)": 7
-      }
+    "Carlos Ruiz": {
+        name: "Carlos Ruiz",
+        age: 15,
+        level: "Intermedio",
+        stats: {
+            "Primer Saque (%)": 70,
+            "Puntos Ganados Primer Saque (%)": 75,
+            "Puntos Ganados Resto (%)": 40,
+            "Winners por Partido": 18,
+            "Velocidad (km/h)": 15,
+            "Concentración (1-10)": 7,
+            "Resistencia (1-10)": 8,
+            "Adaptabilidad (1-10)": 7
+        }
     },
-    {
-      "name": "Sofia Martinez",
-      "age": 16,
-      "level": "Avanzado",
-      "stats": {
-        "Primer Saque (%)": 80,
-        "Puntos Ganados Primer Saque (%)": 85,
-        "Puntos Ganados Resto (%)": 50,
-        "Winners por Partido": 25,
-        "Velocidad (km/h)": 18,
-        "Concentración (1-10)": 9,
-        "Resistencia (1-10)": 9,
-        "Adaptabilidad (1-10)": 8
-      }
+    "Sofia Martinez": {
+        name: "Sofia Martinez",
+        age: 16,
+        level: "Avanzado",
+        stats: {
+            "Primer Saque (%)": 80,
+            "Puntos Ganados Primer Saque (%)": 85,
+            "Puntos Ganados Resto (%)": 50,
+            "Winners por Partido": 25,
+            "Velocidad (km/h)": 18,
+            "Concentración (1-10)": 9,
+            "Resistencia (1-10)": 9,
+            "Adaptabilidad (1-10)": 8
+        }
     }
-  ]
 };
 
-// Global variables
+// Variables globales
 let radarChart;
-let currentPlayerData = {
-  name: "Jugador Ejemplo",
-  age: 14,
-  stats: {
-    "Primer Saque (%)": 65,
-    "Puntos Ganados Primer Saque (%)": 70,
-    "Puntos Ganados Resto (%)": 40,
-    "Winners por Partido": 15,
-    "Velocidad (km/h)": 12,
-    "Concentración (1-10)": 6,
-    "Resistencia (1-10)": 7,
-    "Adaptabilidad (1-10)": 7
-  }
-};
+let historyData = [];
+let autoSaveEnabled = false;
+let autoSaveTimeout;
 
-// Utility functions
-function normalizeStatValue(statName, value) {
-  switch(statName) {
-    case "Primer Saque (%)":
-    case "Puntos Ganados Primer Saque (%)":
-    case "Puntos Ganados Resto (%)":
-      return value; // Already 0-100
-    case "Winners por Partido":
-      return Math.min(value * 2, 100); // 0-50 -> 0-100
-    case "Velocidad (km/h)":
-      return Math.min(value * 3.33, 100); // 0-30 -> 0-100
-    case "Concentración (1-10)":
-    case "Resistencia (1-10)":
-    case "Adaptabilidad (1-10)":
-      return value * 10; // 1-10 -> 10-100
-    default:
-      return value;
-  }
-}
+// Inicialización
+document.addEventListener('DOMContentLoaded', function() {
+    // Asegurar que el loading overlay esté oculto al cargar
+    hideLoadingOverlay();
+    
+    initializeChart();
+    setupEventListeners();
+    loadDefaultData();
+    updateAllDisplays();
+});
 
-function getPerformanceLevel(normalizedValue) {
-  if (normalizedValue >= 86) return { level: 'Excelente', class: 'status--info' };
-  if (normalizedValue >= 71) return { level: 'Bueno', class: 'status--success' };
-  if (normalizedValue >= 41) return { level: 'Promedio', class: 'status--warning' };
-  return { level: 'Necesita Mejora', class: 'status--error' };
-}
-
-function calculateOverallScore(stats) {
-  const normalizedStats = Object.keys(stats).map(key => normalizeStatValue(key, stats[key]));
-  const average = normalizedStats.reduce((sum, val) => sum + val, 0) / normalizedStats.length;
-  return Math.round(average);
-}
-
-function formatStatDisplay(statName, value) {
-  switch(statName) {
-    case "Primer Saque (%)":
-    case "Puntos Ganados Primer Saque (%)":
-    case "Puntos Ganados Resto (%)":
-      return `${value}%`;
-    case "Winners por Partido":
-      return `${value}`;
-    case "Velocidad (km/h)":
-      return `${value} km/h`;
-    case "Concentración (1-10)":
-    case "Resistencia (1-10)":
-    case "Adaptabilidad (1-10)":
-      return `${value}/10`;
-    default:
-      return `${value}`;
-  }
-}
-
-// Chart functions
-function createRadarChart() {
-  const ctx = document.getElementById('radarChart').getContext('2d');
-  
-  const labels = [
-    'Primer Saque',
-    'Puntos 1er Saque',
-    'Puntos Resto',
-    'Winners',
-    'Velocidad',
-    'Concentración',
-    'Resistencia',
-    'Adaptabilidad'
-  ];
-
-  const data = Object.values(currentPlayerData.stats).map((value, index) => {
-    const statName = Object.keys(currentPlayerData.stats)[index];
-    return normalizeStatValue(statName, value);
-  });
-
-  radarChart = new Chart(ctx, {
-    type: 'radar',
-    data: {
-      labels: labels,
-      datasets: [{
-        label: currentPlayerData.name,
-        data: data,
-        fill: true,
-        backgroundColor: 'rgba(33, 150, 243, 0.2)',
-        borderColor: '#2196F3',
-        borderWidth: 3,
-        pointBackgroundColor: '#2196F3',
-        pointBorderColor: '#ffffff',
-        pointBorderWidth: 2,
-        pointRadius: 6,
-        pointHoverRadius: 8,
-        pointHoverBackgroundColor: '#1976D2',
-        pointHoverBorderColor: '#ffffff',
-        pointHoverBorderWidth: 3
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: {
-          display: false
-        }
-      },
-      scales: {
-        r: {
-          beginAtZero: true,
-          max: 100,
-          min: 0,
-          ticks: {
-            stepSize: 20,
-            color: 'rgba(255, 255, 255, 0.6)',
-            font: {
-              size: 11
-            }
-          },
-          grid: {
-            color: 'rgba(255, 255, 255, 0.2)',
-            lineWidth: 1
-          },
-          angleLines: {
-            color: 'rgba(255, 255, 255, 0.2)',
-            lineWidth: 1
-          },
-          pointLabels: {
-            color: 'rgba(255, 255, 255, 0.9)',
-            font: {
-              size: 13,
-              weight: 'bold'
-            }
-          }
-        }
-      },
-      animation: {
-        duration: 1000,
-        easing: 'easeInOutCubic'
-      }
+// Mostrar loading overlay
+function showLoadingOverlay() {
+    const overlay = document.getElementById('loadingOverlay');
+    if (overlay) {
+        overlay.classList.remove('hidden');
     }
-  });
 }
 
-function updateRadarChart() {
-  if (!radarChart) return;
-
-  const data = Object.values(currentPlayerData.stats).map((value, index) => {
-    const statName = Object.keys(currentPlayerData.stats)[index];
-    return normalizeStatValue(statName, value);
-  });
-
-  radarChart.data.datasets[0].data = data;
-  radarChart.data.datasets[0].label = currentPlayerData.name;
-  radarChart.update('active');
+// Ocultar loading overlay
+function hideLoadingOverlay() {
+    const overlay = document.getElementById('loadingOverlay');
+    if (overlay) {
+        overlay.classList.add('hidden');
+    }
 }
 
-// UI Update functions
-function updateFormValues() {
-  document.getElementById('playerName').value = currentPlayerData.name;
-  document.getElementById('playerAge').value = currentPlayerData.age;
+// Configuración del gráfico radar
+function initializeChart() {
+    const ctx = document.getElementById('radarChart').getContext('2d');
+    
+    radarChart = new Chart(ctx, {
+        type: 'radar',
+        data: {
+            labels: [
+                'Primer Saque',
+                'Puntos 1er Saque',
+                'Puntos Resto',
+                'Winners',
+                'Velocidad',
+                'Concentración',
+                'Resistencia',
+                'Adaptabilidad'
+            ],
+            datasets: [{
+                label: 'Rendimiento',
+                data: [65, 70, 40, 60, 48, 60, 70, 70],
+                backgroundColor: 'rgba(33, 150, 243, 0.2)',
+                borderColor: '#2196F3',
+                borderWidth: 2,
+                pointBackgroundColor: '#2196F3',
+                pointBorderColor: '#fff',
+                pointBorderWidth: 2,
+                pointRadius: 5,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                r: {
+                    angleLines: {
+                        color: 'rgba(0, 0, 0, 0.1)'
+                    },
+                    grid: {
+                        color: 'rgba(0, 0, 0, 0.1)'
+                    },
+                    pointLabels: {
+                        font: {
+                            size: 12,
+                            weight: '500'
+                        }
+                    },
+                    ticks: {
+                        beginAtZero: true,
+                        max: 100,
+                        stepSize: 20,
+                        display: true,
+                        backdropColor: 'transparent'
+                    }
+                }
+            },
+            animation: {
+                duration: 1000,
+                easing: 'easeInOutQuart'
+            }
+        }
+    });
+}
 
-  // Update sliders and their display values
-  Object.keys(currentPlayerData.stats).forEach((statName, index) => {
-    const value = currentPlayerData.stats[statName];
-    const sliderIds = [
-      'primerSaque', 'puntosPrimerSaque', 'puntosResto', 'winners',
-      'velocidad', 'concentracion', 'resistencia', 'adaptabilidad'
+// Configuración de event listeners
+function setupEventListeners() {
+    // Sincronización entre sliders y inputs numéricos
+    const statControls = [
+        { slider: 'primerSaque', number: 'primerSaqueNum' },
+        { slider: 'puntosPrimerSaque', number: 'puntosPrimerSaqueNum' },
+        { slider: 'puntosResto', number: 'puntosRestoNum' },
+        { slider: 'winners', number: 'winnersNum' },
+        { slider: 'velocidad', number: 'velocidadNum' },
+        { slider: 'concentracion', number: 'concentracionNum' },
+        { slider: 'resistencia', number: 'resistenciaNum' },
+        { slider: 'adaptabilidad', number: 'adaptabilidadNum' }
     ];
+
+    statControls.forEach(control => {
+        const slider = document.getElementById(control.slider);
+        const numberInput = document.getElementById(control.number);
+
+        if (slider && numberInput) {
+            slider.addEventListener('input', function() {
+                numberInput.value = this.value;
+                updateAllDisplays();
+                handleAutoSave();
+            });
+
+            numberInput.addEventListener('input', function() {
+                slider.value = this.value;
+                updateAllDisplays();
+                handleAutoSave();
+            });
+        }
+    });
+
+    // Botón guardar en Sheets
+    const saveButton = document.getElementById('saveToSheets');
+    if (saveButton) {
+        saveButton.addEventListener('click', () => saveToGoogleSheets());
+    }
+
+    // Toggle auto-guardado
+    const autoSaveToggle = document.getElementById('autoSave');
+    if (autoSaveToggle) {
+        autoSaveToggle.addEventListener('change', function() {
+            autoSaveEnabled = this.checked;
+            showToast(
+                autoSaveEnabled ? 'Auto-guardado activado' : 'Auto-guardado desactivado',
+                'info'
+            );
+        });
+    }
+
+    // Campos de información del jugador
+    ['playerName', 'playerAge', 'playerLevel'].forEach(fieldId => {
+        const field = document.getElementById(fieldId);
+        if (field) {
+            field.addEventListener('input', handleAutoSave);
+        }
+    });
+}
+
+// Cargar datos por defecto
+function loadDefaultData() {
+    const defaultStats = {
+        "Primer Saque (%)": 65,
+        "Puntos Ganados Primer Saque (%)": 70,
+        "Puntos Ganados Resto (%)": 40,
+        "Winners por Partido": 15,
+        "Velocidad (km/h)": 12,
+        "Concentración (1-10)": 6,
+        "Resistencia (1-10)": 7,
+        "Adaptabilidad (1-10)": 7
+    };
+
+    setStatsValues(defaultStats);
+}
+
+// Cargar jugador de ejemplo
+function loadExamplePlayer(playerName) {
+    const player = EXAMPLE_PLAYERS[playerName];
+    if (!player) return;
+
+    // Cargar información del jugador
+    const nameField = document.getElementById('playerName');
+    const ageField = document.getElementById('playerAge');
+    const levelField = document.getElementById('playerLevel');
     
-    const slider = document.getElementById(sliderIds[index]);
-    if (slider) {
-      slider.value = value;
-      updateSliderDisplay(slider);
-    }
-  });
+    if (nameField) nameField.value = player.name;
+    if (ageField) ageField.value = player.age;
+    if (levelField) levelField.value = player.level;
+
+    // Cargar estadísticas
+    setStatsValues(player.stats);
+    updateAllDisplays();
+
+    showToast(`Perfil de ${playerName} cargado`, 'success');
 }
 
-function updateSliderDisplay(slider) {
-  const container = slider.parentElement;
-  const valueSpan = container.querySelector('.stat-value');
-  const statName = Object.keys(currentPlayerData.stats)[getSliderIndex(slider.id)];
-  
-  if (valueSpan && statName) {
-    valueSpan.textContent = formatStatDisplay(statName, parseInt(slider.value));
-  }
+// Establecer valores de estadísticas
+function setStatsValues(stats) {
+    const updates = [
+        { id: 'primerSaque', value: stats["Primer Saque (%)"] },
+        { id: 'primerSaqueNum', value: stats["Primer Saque (%)"] },
+        { id: 'puntosPrimerSaque', value: stats["Puntos Ganados Primer Saque (%)"] },
+        { id: 'puntosPrimerSaqueNum', value: stats["Puntos Ganados Primer Saque (%)"] },
+        { id: 'puntosResto', value: stats["Puntos Ganados Resto (%)"] },
+        { id: 'puntosRestoNum', value: stats["Puntos Ganados Resto (%)"] },
+        { id: 'winners', value: stats["Winners por Partido"] },
+        { id: 'winnersNum', value: stats["Winners por Partido"] },
+        { id: 'velocidad', value: stats["Velocidad (km/h)"] },
+        { id: 'velocidadNum', value: stats["Velocidad (km/h)"] },
+        { id: 'concentracion', value: stats["Concentración (1-10)"] },
+        { id: 'concentracionNum', value: stats["Concentración (1-10)"] },
+        { id: 'resistencia', value: stats["Resistencia (1-10)"] },
+        { id: 'resistenciaNum', value: stats["Resistencia (1-10)"] },
+        { id: 'adaptabilidad', value: stats["Adaptabilidad (1-10)"] },
+        { id: 'adaptabilidadNum', value: stats["Adaptabilidad (1-10)"] }
+    ];
+
+    updates.forEach(update => {
+        const element = document.getElementById(update.id);
+        if (element) {
+            element.value = update.value;
+        }
+    });
 }
 
-function getSliderIndex(sliderId) {
-  const sliderIds = [
-    'primerSaque', 'puntosPrimerSaque', 'puntosResto', 'winners',
-    'velocidad', 'concentracion', 'resistencia', 'adaptabilidad'
-  ];
-  return sliderIds.indexOf(sliderId);
+// Obtener estadísticas actuales
+function getCurrentStats() {
+    const getValue = (id) => {
+        const element = document.getElementById(id);
+        return element ? parseInt(element.value) || 0 : 0;
+    };
+
+    return {
+        primerSaque: getValue('primerSaque'),
+        puntosPrimerSaque: getValue('puntosPrimerSaque'),
+        puntosResto: getValue('puntosResto'),
+        winners: getValue('winners'),
+        velocidad: getValue('velocidad'),
+        concentracion: getValue('concentracion'),
+        resistencia: getValue('resistencia'),
+        adaptabilidad: getValue('adaptabilidad')
+    };
 }
 
-function updateStatsDisplay() {
-  const statIds = [
-    'stat-primer-saque', 'stat-puntos-primer-saque', 'stat-puntos-resto', 'stat-winners',
-    'stat-velocidad', 'stat-concentracion', 'stat-resistencia', 'stat-adaptabilidad'
-  ];
-  
-  const levelIds = [
-    'level-primer-saque', 'level-puntos-primer-saque', 'level-puntos-resto', 'level-winners',
-    'level-velocidad', 'level-concentracion', 'level-resistencia', 'level-adaptabilidad'
-  ];
+// Normalizar estadísticas para el gráfico radar (escala 0-100)
+function normalizeStatsForRadar(stats) {
+    return [
+        stats.primerSaque, // Ya está en %
+        stats.puntosPrimerSaque, // Ya está en %
+        stats.puntosResto, // Ya está en %
+        Math.min((stats.winners / 50) * 100, 100), // Normalizar winners (máx 50)
+        Math.min((stats.velocidad / 25) * 100, 100), // Normalizar velocidad (máx 25 km/h)
+        (stats.concentracion / 10) * 100, // Normalizar concentración (1-10)
+        (stats.resistencia / 10) * 100, // Normalizar resistencia (1-10)
+        (stats.adaptabilidad / 10) * 100 // Normalizar adaptabilidad (1-10)
+    ];
+}
 
-  Object.values(currentPlayerData.stats).forEach((value, index) => {
-    const statName = Object.keys(currentPlayerData.stats)[index];
-    const statElement = document.getElementById(statIds[index]);
-    const levelElement = document.getElementById(levelIds[index]);
+// Actualizar todas las visualizaciones
+function updateAllDisplays() {
+    const stats = getCurrentStats();
+    const normalizedStats = normalizeStatsForRadar(stats);
     
-    if (statElement) {
-      statElement.textContent = formatStatDisplay(statName, value);
+    // Actualizar gráfico radar
+    if (radarChart) {
+        radarChart.data.datasets[0].data = normalizedStats;
+        radarChart.update('none');
     }
     
-    if (levelElement) {
-      const normalizedValue = normalizeStatValue(statName, value);
-      const performance = getPerformanceLevel(normalizedValue);
-      
-      levelElement.textContent = performance.level;
-      levelElement.className = `status ${performance.class}`;
+    // Actualizar estadísticas numéricas
+    updateStatsPanel(stats);
+    
+    // Actualizar puntuación general
+    updateOverallScore(normalizedStats);
+}
+
+// Actualizar panel de estadísticas
+function updateStatsPanel(stats) {
+    const updates = [
+        { id: 'statPrimerSaque', value: `${stats.primerSaque}%`, rating: getRating(stats.primerSaque, 'percentage') },
+        { id: 'statPuntosPrimerSaque', value: `${stats.puntosPrimerSaque}%`, rating: getRating(stats.puntosPrimerSaque, 'percentage') },
+        { id: 'statPuntosResto', value: `${stats.puntosResto}%`, rating: getRating(stats.puntosResto, 'percentage') },
+        { id: 'statWinners', value: `${stats.winners}`, rating: getRating(stats.winners, 'winners') },
+        { id: 'statVelocidad', value: `${stats.velocidad} km/h`, rating: getRating(stats.velocidad, 'velocidad') },
+        { id: 'statConcentracion', value: `${stats.concentracion}/10`, rating: getRating(stats.concentracion, 'scale10') },
+        { id: 'statResistencia', value: `${stats.resistencia}/10`, rating: getRating(stats.resistencia, 'scale10') },
+        { id: 'statAdaptabilidad', value: `${stats.adaptabilidad}/10`, rating: getRating(stats.adaptabilidad, 'scale10') }
+    ];
+
+    updates.forEach(update => {
+        const valueElement = document.getElementById(update.id);
+        if (valueElement) {
+            valueElement.textContent = update.value;
+        }
+        
+        const ratingElement = document.getElementById(update.id.replace('stat', 'rating'));
+        if (ratingElement) {
+            ratingElement.textContent = update.rating.text;
+            ratingElement.className = `stat-rating ${update.rating.class}`;
+        }
+    });
+}
+
+// Obtener calificación de una estadística
+function getRating(value, type) {
+    let thresholds;
+    
+    switch(type) {
+        case 'percentage':
+            thresholds = { excellent: 80, good: 60, average: 40 };
+            break;
+        case 'winners':
+            thresholds = { excellent: 25, good: 15, average: 8 };
+            break;
+        case 'velocidad':
+            thresholds = { excellent: 20, good: 15, average: 10 };
+            break;
+        case 'scale10':
+            thresholds = { excellent: 8, good: 6, average: 4 };
+            break;
+        default:
+            thresholds = { excellent: 80, good: 60, average: 40 };
     }
-  });
 
-  // Update overall score
-  const overallScore = calculateOverallScore(currentPlayerData.stats);
-  const overallElement = document.getElementById('overallScore');
-  if (overallElement) {
-    overallElement.textContent = `Puntuación General: ${overallScore}/100`;
-    const performance = getPerformanceLevel(overallScore);
-    overallElement.className = `status ${performance.class}`;
-  }
-}
-
-function updatePlayerInfo() {
-  const titleElement = document.getElementById('chartTitle');
-  const infoElement = document.getElementById('playerInfo');
-  
-  if (titleElement) {
-    titleElement.textContent = `Gráfico Radar - ${currentPlayerData.name}`;
-  }
-  
-  if (infoElement) {
-    infoElement.textContent = `Edad: ${currentPlayerData.age} años`;
-  }
-}
-
-function updateCurrentPlayerFromForm() {
-  const playerName = document.getElementById('playerName').value || 'Jugador Sin Nombre';
-  const playerAge = parseInt(document.getElementById('playerAge').value) || 14;
-  
-  currentPlayerData.name = playerName;
-  currentPlayerData.age = playerAge;
-
-  const sliderIds = [
-    'primerSaque', 'puntosPrimerSaque', 'puntosResto', 'winners',
-    'velocidad', 'concentracion', 'resistencia', 'adaptabilidad'
-  ];
-  
-  const statNames = Object.keys(currentPlayerData.stats);
-  
-  sliderIds.forEach((sliderId, index) => {
-    const slider = document.getElementById(sliderId);
-    if (slider && statNames[index]) {
-      currentPlayerData.stats[statNames[index]] = parseInt(slider.value);
+    if (value >= thresholds.excellent) {
+        return { text: 'Excelente', class: 'excellent' };
+    } else if (value >= thresholds.good) {
+        return { text: 'Bueno', class: 'good' };
+    } else if (value >= thresholds.average) {
+        return { text: 'Regular', class: 'average' };
+    } else {
+        return { text: 'Mejorable', class: 'poor' };
     }
-  });
 }
 
-function loadExamplePlayer(playerIndex) {
-  if (playerIndex >= 0 && playerIndex < applicationData.example_players.length) {
-    const examplePlayer = applicationData.example_players[playerIndex];
-    currentPlayerData = {
-      name: examplePlayer.name,
-      age: examplePlayer.age,
-      stats: { ...examplePlayer.stats }
+// Actualizar puntuación general
+function updateOverallScore(normalizedStats) {
+    const average = normalizedStats.reduce((sum, stat) => sum + stat, 0) / normalizedStats.length;
+    const roundedScore = Math.round(average * 10) / 10;
+    
+    const scoreElement = document.getElementById('overallScore');
+    const progressElement = document.getElementById('scoreProgress');
+    
+    if (scoreElement) {
+        scoreElement.textContent = roundedScore;
+    }
+    if (progressElement) {
+        progressElement.style.width = `${average}%`;
+    }
+}
+
+// Manejar auto-guardado
+function handleAutoSave() {
+    if (!autoSaveEnabled) return;
+    
+    clearTimeout(autoSaveTimeout);
+    autoSaveTimeout = setTimeout(() => {
+        saveToGoogleSheets(true);
+    }, 3000); // Auto-guardar después de 3 segundos de inactividad
+}
+
+// Guardar en Google Sheets
+async function saveToGoogleSheets(isAutoSave = false) {
+    const playerName = document.getElementById('playerName')?.value || 'Jugador Anónimo';
+    const playerAge = document.getElementById('playerAge')?.value || '';
+    const playerLevel = document.getElementById('playerLevel')?.value || '';
+    const stats = getCurrentStats();
+    
+    // Mostrar loading overlay solo si no es auto-guardado
+    if (!isAutoSave) {
+        showLoadingOverlay();
+    }
+    
+    const data = {
+        timestamp: new Date().toISOString(),
+        playerName,
+        playerAge,
+        playerLevel,
+        ...stats
     };
     
-    updateFormValues();
-    updateAllDisplays();
-  }
-}
-
-function updateAllDisplays() {
-  updatePlayerInfo();
-  updateStatsDisplay();
-  updateRadarChart();
-}
-
-function exportChart() {
-  if (radarChart) {
-    const canvas = document.getElementById('radarChart');
-    const link = document.createElement('a');
-    link.download = `${currentPlayerData.name}_radar_chart.png`;
-    link.href = canvas.toDataURL('image/png');
-    link.click();
-  }
-}
-
-// Event Listeners
-function setupEventListeners() {
-  // Slider change events
-  const sliders = document.querySelectorAll('.stat-slider');
-  sliders.forEach(slider => {
-    slider.addEventListener('input', function() {
-      updateSliderDisplay(this);
-      updateCurrentPlayerFromForm();
-      updateStatsDisplay();
-    });
-    
-    slider.addEventListener('change', function() {
-      updateRadarChart();
-    });
-  });
-
-  // Player name and age change events
-  const playerName = document.getElementById('playerName');
-  const playerAge = document.getElementById('playerAge');
-  
-  [playerName, playerAge].forEach(input => {
-    if (input) {
-      input.addEventListener('input', function() {
-        updateCurrentPlayerFromForm();
-        updatePlayerInfo();
-      });
+    try {
+        const response = await fetch(APP_SCRIPT_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data)
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showToast(
+                isAutoSave ? 'Guardado automáticamente' : 'Datos guardados exitosamente',
+                'success'
+            );
+            addToHistory(data);
+        } else {
+            throw new Error(result.error || 'Error desconocido');
+        }
+        
+    } catch (error) {
+        console.error('Error al guardar:', error);
+        showToast(
+            `Error al guardar: ${error.message}`,
+            'error'
+        );
+    } finally {
+        // Ocultar loading overlay
+        if (!isAutoSave) {
+            hideLoadingOverlay();
+        }
     }
-  });
-
-  // Update chart button
-  const updateButton = document.getElementById('updateChart');
-  if (updateButton) {
-    updateButton.addEventListener('click', function() {
-      updateCurrentPlayerFromForm();
-      updateAllDisplays();
-      
-      // Visual feedback
-      const chartContainer = document.querySelector('.chart-container');
-      chartContainer.classList.add('chart-updating');
-      setTimeout(() => {
-        chartContainer.classList.remove('chart-updating');
-      }, 1000);
-    });
-  }
-
-  // Export chart button
-  const exportButton = document.getElementById('exportChart');
-  if (exportButton) {
-    exportButton.addEventListener('click', exportChart);
-  }
-
-  // Example player buttons
-  const exampleButtons = document.querySelectorAll('[data-player]');
-  exampleButtons.forEach(button => {
-    button.addEventListener('click', function() {
-      const playerIndex = parseInt(this.getAttribute('data-player'));
-      loadExamplePlayer(playerIndex);
-      
-      // Visual feedback
-      exampleButtons.forEach(btn => btn.classList.remove('btn--primary'));
-      this.classList.remove('btn--secondary');
-      this.classList.add('btn--primary');
-      
-      setTimeout(() => {
-        this.classList.remove('btn--primary');
-        this.classList.add('btn--secondary');
-      }, 1000);
-    });
-  });
 }
 
-// Initialization
-function initializeApp() {
-  // Setup event listeners
-  setupEventListeners();
-  
-  // Initialize form values
-  updateFormValues();
-  
-  // Initialize displays
-  updateAllDisplays();
-  
-  // Create the radar chart
-  createRadarChart();
-  
-  console.log('🎾 Tennis Statistics App initialized successfully!');
+// Agregar al historial
+function addToHistory(data) {
+    historyData.unshift(data);
+    if (historyData.length > 5) {
+        historyData = historyData.slice(0, 5);
+    }
+    updateHistoryDisplay();
 }
 
-// Wait for DOM to be fully loaded
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initializeApp);
-} else {
-  initializeApp();
+// Actualizar visualización del historial
+function updateHistoryDisplay() {
+    const historyList = document.getElementById('historyList');
+    if (!historyList) return;
+    
+    if (historyData.length === 0) {
+        historyList.innerHTML = '<p class="text-muted">No hay entradas guardadas aún</p>';
+        return;
+    }
+    
+    historyList.innerHTML = historyData.map(entry => {
+        const date = new Date(entry.timestamp);
+        const formattedDate = date.toLocaleDateString('es-ES', {
+            day: '2-digit',
+            month: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+        
+        return `
+            <div class="history-item">
+                <div style="font-weight: 500; margin-bottom: 4px;">
+                    ${entry.playerName} - ${entry.playerLevel || 'Sin nivel'}
+                </div>
+                <div style="font-size: 11px; color: var(--color-text-secondary);">
+                    ${formattedDate}
+                </div>
+            </div>
+        `;
+    }).join('');
 }
+
+// Sistema de notificaciones toast
+function showToast(message, type = 'info') {
+    const toastContainer = document.getElementById('toastContainer');
+    if (!toastContainer) return;
+    
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    
+    const icon = type === 'success' ? '✅' : 
+                 type === 'error' ? '❌' : 
+                 type === 'info' ? 'ℹ️' : '⚠️';
+    
+    toast.innerHTML = `
+        <span style="font-size: 16px;">${icon}</span>
+        <span>${message}</span>
+    `;
+    
+    toastContainer.appendChild(toast);
+    
+    // Eliminar toast después de 4 segundos
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateX(100%)';
+        setTimeout(() => {
+            if (toast.parentNode) {
+                toast.parentNode.removeChild(toast);
+            }
+        }, 300);
+    }, 4000);
+}
+
+// Hacer funciones disponibles globalmente para los botones HTML
+window.loadExamplePlayer = loadExamplePlayer;
