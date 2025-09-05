@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TennisTracker - Seguimiento de Tenis</title>
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --secondary: #e74c3c;
+            --accent: #3498db;
+            --light: #ecf0f1;
+            --dark: #2c3e50;
+            --success: #2ecc71;
+            --warning: #f39c12;
+            --danger: #e74c3c;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+        }
+        
+        .container {
+            width: 90%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            background-color: var(--primary);
+            color: white;
+            padding: 1rem 0;
+            text-align: center;
+            margin-bottom: 2rem;
+            border-radius: 0 0 10px 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        h1, h2, h3 {
+            margin-bottom: 1rem;
+        }
+        
+        .dashboard {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 20px;
+            margin-bottom: 2rem;
+        }
+        
+        .stats-card {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+        
+        .stat {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .stat-value {
+            font-weight: bold;
+            color: var(--primary);
+        }
+        
+        .btn {
+            display: inline-block;
+            background: var(--accent);
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            text-decoration: none;
+            font-size: 16px;
+            margin: 5px 0;
+            transition: background 0.3s;
+        }
+        
+        .btn:hover {
+            background: #2980b9;
+        }
+        
+        .btn-success {
+            background: var(--success);
+        }
+        
+        .btn-success:hover {
+            background: #27ae60;
+        }
+        
+        .btn-danger {
+            background: var(--danger);
+        }
+        
+        .btn-danger:hover {
+            background: #c0392b;
+        }
+        
+        form {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        
+        input, select, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        
+        .matches-list {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .match-item {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            padding: 15px;
+            border-bottom: 1px solid #eee;
+            align-items: center;
+        }
+        
+        .match-item:last-child {
+            border-bottom: none;
+        }
+        
+        .match-result {
+            text-align: center;
+            font-weight: bold;
+        }
+        
+        .win {
+            color: var(--success);
+        }
+        
+        .loss {
+            color: var(--danger);
+        }
+        
+        .match-actions {
+            text-align: right;
+        }
+        
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .tab {
+            flex: 1;
+            text-align: center;
+            padding: 15px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        
+        .tab.active {
+            background: var(--primary);
+            color: white;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .chart-container {
+            height: 300px;
+            margin-top: 20px;
+        }
+        
+        .setup-section {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+        
+        .setup-step {
+            margin-bottom: 15px;
+            padding: 10px;
+            background: #f9f9f9;
+            border-radius: 5px;
+        }
+        
+        .login-section {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+        
+        @media (max-width: 768px) {
+            .dashboard {
+                grid-template-columns: 1fr;
+            }
+            
+            .match-item {
+                grid-template-columns: 1fr;
+                text-align: center;
+                gap: 10px;
+            }
+            
+            .match-actions {
+                text-align: center;
+            }
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            font-style: italic;
+            color: #7f8c8d;
+        }
+
+        .status-message {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            text-align: center;
+        }
+
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+    </style>
+    
+    <!-- Firebase App (core Firebase SDK) -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <!-- Firebase Firestore -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <!-- Firebase Auth -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>TennisTracker</h1>
+            <p>Seguimiento del rendimiento y resultados de partidos</p>
+        </div>
+    </header>
+
+    <div class="container">
+        <div id="login-section" class="login-section">
+            <h2>Iniciar Sesión / Registrarse</h2>
+            <div id="auth-status" class="status-message"></div>
+            <div class="form-group">
+                <label for="email">Email:</label>
+                <input type="email" id="email" required>
+            </div>
+            <div class="form-group">
+                <label for="password">Contraseña:</label>
+                <input type="password" id="password" required>
+            </div>
+            <button id="login-btn" class="btn">Iniciar Sesión</button>
+            <button id="signup-btn" class="btn">Registrarse</button>
+        </div>
+
+        <div id="app-content" style="display: none;">
+            <div class="tabs">
+                <div class="tab active" data-tab="dashboard">Dashboard</div>
+                <div class="tab" data-tab="matches">Partidos</div>
+                <div class="tab" data-tab="stats">Estadísticas</div>
+                <div class="tab" data-tab="add-match">Añadir Partido</div>
+                <div class="tab" id="logout-tab">Cerrar Sesión</div>
+            </div>
+
+            <div id="dashboard" class="tab-content active">
+                <h2>Resumen del Rendimiento</h2>
+                <div class="dashboard">
+                    <div>
+                        <div class="stats-card">
+                            <h3>Estadísticas Generales</h3>
+                            <div class="stat">
+                                <span>Partidos jugados:</span>
+                                <span class="stat-value" id="total-matches">0</span>
+                            </div>
+                            <div class="stat">
+                                <span>Victorias:</span>
+                                <span class="stat-value" id="wins">0</span>
+                            </div>
+                            <div class="stat">
+                                <span>Derrotas:</span>
+                                <span class="stat-value" id="losses">0</span>
+                            </div>
+                            <div class="stat">
+                                <span>Porcentaje de victorias:</span>
+                                <span class="stat-value" id="win-percentage">0%</span>
+                            </div>
+                        </div>
+                        
+                        <div class="stats-card">
+                            <h3>Último Partido</h3>
+                            <div id="last-match-details">
+                                <p>Aún no hay partidos registrados</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="stats-card">
+                        <h3>Evolución</h3>
+                        <div class="chart-container">
+                            <canvas id="performance-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="matches" class="tab-content">
+                <h2>Historial de Partidos</h2>
+                <div class="matches-list">
+                    <div id="matches-container">
+                        <p class="no-matches">Aún no hay partidos registrados</p>
+                    </div>
+                </div>
+            </div>
+
+            <div id="stats" class="tab-content">
+                <h2>Estadísticas Detalladas</h2>
+                <div class="dashboard">
+                    <div class="stats-card">
+                        <h3>Por Superficie</h3>
+                        <div id="surface-stats">
+                            <p class="loading">Cargando estadísticas...</p>
+                        </div>
+                    </div>
+                    <div class="stats-card">
+                        <h3>Por Torneo</h3>
+                        <div id="tournament-stats">
+                            <p class="loading">Cargando estadísticas...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="add-match" class="tab-content">
+                <h2>Añadir Nuevo Partido</h2>
+                <form id="match-form">
+                    <div class="form-group">
+                        <label for="opponent">Oponente:</label>
+                        <input type="text" id="opponent" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="date">Fecha del partido:</label>
+                        <input type="date" id="date" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="tournament">Torneo/Competición:</label>
+                        <input type="text" id="tournament">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="surface">Superficie:</label>
+                        <select id="surface" required>
+                            <option value="pista dura">Pista Dura</option>
+                            <option value="arcilla">Arcilla</option>
+                            <option value="hierba">Hierba</option>
+                            <option value="sintética">Sintética</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Resultado:</label>
+                        <div style="display: flex; gap: 10px;">
+                            <input type="number" id="player-sets" min="0" placeholder="Sets a favor" required>
+                            <span style="line-height: 40px;">-</span>
+                            <input type="number" id="opponent-sets" min="0" placeholder="Sets en contra" required>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="duration">Duración (minutos):</label>
+                        <input type="number" id="duration" min="0">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="notes">Notas adicionales:</label>
+                        <textarea id="notes" rows="4"></textarea>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-success">Guardar Partido</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script>
+        // Configuración de Firebase preintegrada
+        const firebaseConfig = {
+            apiKey: "AIzaSyDUBZ_afiSMO2psHUBrtgy3eZwfqGKb-vU",
+            authDomain: "tennis-tracker-395l7.firebaseapp.com",
+            projectId: "tennis-tracker-395l7",
+            storageBucket: "tennis-tracker-395l7.firebasestorage.app",
+            messagingSenderId: "737593013121",
+            appId: "1:737593013121:web:9f92a00887d205f645ee80"
+        };
+
+        // Variables globales
+        let db = null;
+        let currentUser = null;
+        let matches = [];
+        
+        // Elementos DOM
+        const tabs = document.querySelectorAll('.tab');
+        const tabContents = document.querySelectorAll('.tab-content');
+        const matchForm = document.getElementById('match-form');
+        const matchesContainer = document.getElementById('matches-container');
+        const loginSection = document.getElementById('login-section');
+        const appContentSection = document.getElementById('app-content');
+        const loginBtn = document.getElementById('login-btn');
+        const signupBtn = document.getElementById('signup-btn');
+        const logoutTab = document.getElementById('logout-tab');
+        const authStatus = document.getElementById('auth-status');
+        
+        // Inicializar la aplicación
+        document.addEventListener('DOMContentLoaded', function() {
+            // Inicializar Firebase con la configuración predefinida
+            try {
+                firebase.initializeApp(firebaseConfig);
+                db = firebase.firestore();
+                
+                // Verificar si el usuario ya está autenticado
+                firebase.auth().onAuthStateChanged(user => {
+                    if (user) {
+                        currentUser = user;
+                        loginSection.style.display = 'none';
+                        appContentSection.style.display = 'block';
+                        loadUserData();
+                    } else {
+                        loginSection.style.display = 'block';
+                        appContentSection.style.display = 'none';
+                    }
+                });
+            } catch (error) {
+                showAuthStatus('Error inicializando Firebase: ' + error.message, 'error');
+            }
+            
+            // Configurar pestañas
+            tabs.forEach(tab => {
+                tab.addEventListener('click', (e) => {
+                    if (e.target.id === 'logout-tab') {
+                        logout();
+                        return;
+                    }
+                    
+                    const tabId = tab.getAttribute('data-tab');
+                    
+                    // Desactivar todas las pestañas
+                    tabs.forEach(t => t.classList.remove('active'));
+                    tabContents.forEach(tc => tc.classList.remove('active'));
+                    
+                    // Activar la pestaña seleccionada
+                    tab.classList.add('active');
+                    document.getElementById(tabId).classList.add('active');
+                });
+            });
+            
+            // Configurar el formulario
+            matchForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                addNewMatch();
+            });
+            
+            // Configurar botones de autenticación
+            loginBtn.addEventListener('click', login);
+            signupBtn.addEventListener('click', signup);
+        });
+        
+        // Mostrar mensaje de estado de autenticación
+        function showAuthStatus(message, type) {
+            authStatus.textContent = message;
+            authStatus.className = 'status-message ' + type;
+        }
+        
+        // Registrar nuevo usuario
+        function signup() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
+            if (!email || !password) {
+                showAuthStatus('Por favor, completa todos los campos', 'error');
+                return;
+            }
+            
+            firebase.auth().createUserWithEmailAndPassword(email, password)
+                .then((userCredential) => {
+                    showAuthStatus('Usuario registrado con éxito.', 'success');
+                })
+                .catch((error) => {
+                    showAuthStatus('Error al registrar: ' + error.message, 'error');
+                });
+        }
+        
+        // Iniciar sesión
+        function login() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
+            if (!email || !password) {
+                showAuthStatus('Por favor, completa todos los campos', 'error');
+                return;
+            }
+            
+            firebase.auth().signInWithEmailAndPassword(email, password)
+                .then((userCredential) => {
+                    showAuthStatus('Sesión iniciada con éxito.', 'success');
+                })
+                .catch((error) => {
+                    showAuthStatus('Error al iniciar sesión: ' + error.message, 'error');
+                });
+        }
+        
+        // Cerrar sesión
+        function logout() {
+            firebase.auth().signOut().then(() => {
+                currentUser = null;
+                matches = [];
+                loginSection.style.display = 'block';
+                appContentSection.style.display = 'none';
+                showAuthStatus('Sesión cerrada.', 'success');
+            });
+        }
+        
+        // Cargar datos del usuario
+        function loadUserData() {
+            if (!currentUser) return;
+            
+            db.collection('matches')
+                .where('userId', '==', currentUser.uid)
+                .orderBy('date', 'desc')
+                .onSnapshot(snapshot => {
+                    matches = [];
+                    snapshot.forEach(doc => {
+                        matches.push({ id: doc.id, ...doc.data() });
+                    });
+                    
+                    updateDashboard();
+                    renderMatchesList();
+                    updateStats();
+                }, error => {
+                    console.error('Error cargando partidos:', error);
+                });
+        }
+        
+        // Añadir nuevo partido
+        function addNewMatch() {
+            if (!currentUser) {
+                alert('Debes iniciar sesión para añadir partidos');
+                return;
+            }
+            
+            const opponent = document.getElementById('opponent').value;
+            const date = document.getElementById('date').value;
+            const tournament = document.getElementById('tournament').value;
+            const surface = document.getElementById('surface').value;
+            const playerSets = parseInt(document.getElementById('player-sets').value);
+            const opponentSets = parseInt(document.getElementById('opponent-sets').value);
+            const duration = document.getElementById('duration').value;
+            const notes = document.getElementById('notes').value;
+            
+            const newMatch = {
+                userId: currentUser.uid,
+                opponent,
+                date,
+                tournament,
+                surface,
+                playerSets,
+                opponentSets,
+                duration,
+                notes,
+                result: playerSets > opponentSets ? 'win' : 'loss',
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            };
+            
+            db.collection('matches').add(newMatch)
+                .then(() => {
+                    matchForm.reset();
+                    alert('Partido añadido correctamente!');
+                })
+                .catch(error => {
+                    alert('Error al guardar el partido: ' + error.message);
+                });
+        }
+        
+        // Actualizar el dashboard
+        function updateDashboard() {
+            const totalMatches = matches.length;
+            const wins = matches.filter(match => match.result === 'win').length;
+            const losses = totalMatches - wins;
+            const winPercentage = totalMatches > 0 ? Math.round((wins / totalMatches) * 100) : 0;
+            
+            document.getElementById('total-matches').textContent = totalMatches;
+            document.getElementById('wins').textContent = wins;
+            document.getElementById('losses').textContent = losses;
+            document.getElementById('win-percentage').textContent = `${winPercentage}%`;
+            
+            // Actualizar último partido
+            const lastMatchContainer = document.getElementById('last-match-details');
+            if (matches.length > 0) {
+                const lastMatch = matches[0];
+                lastMatchContainer.innerHTML = `
+                    <p><strong>Vs:</strong> ${lastMatch.opponent}</p>
+                    <p><strong>Resultado:</strong> ${lastMatch.playerSets}-${lastMatch.opponentSets} 
+                    (${lastMatch.result === 'win' ? 'Victoria' : 'Derrota'})</p>
+                    <p><strong>Fecha:</strong> ${formatDate(lastMatch.date)}</p>
+                    <p><strong>Torneo:</strong> ${lastMatch.tournament || 'Amistoso'}</p>
+                `;
+            } else {
+                lastMatchContainer.innerHTML = '<p>Aún no hay partidos registrados</p>';
+            }
+            
+            // Actualizar gráfico de rendimiento
+            updatePerformanceChart();
+        }
+        
+        // Renderizar la lista de partidos
+        function renderMatchesList() {
+            if (matches.length === 0) {
+                matchesContainer.innerHTML = '<p class="no-matches">Aún no hay partidos registrados</p>';
+                return;
+            }
+            
+            matchesContainer.innerHTML = '';
+            matches.forEach(match => {
+                const matchElement = document.createElement('div');
+                matchElement.classList.add('match-item');
+                matchElement.innerHTML = `
+                    <div>
+                        <strong>Vs: ${match.opponent}</strong>
+                        <p>${formatDate(match.date)} - ${match.tournament || 'Amistoso'}</p>
+                    </div>
+                    <div class="match-result ${match.result}">
+                        ${match.playerSets}-${match.opponentSets}
+                        <br>
+                        <small>${match.result === 'win' ? 'Victoria' : 'Derrota'}</small>
+                    </div>
+                    <div class="match-actions">
+                        <button class="btn btn-danger" onclick="deleteMatch('${match.id}')">Eliminar</button>
+                    </div>
+                `;
+                matchesContainer.appendChild(matchElement);
+            });
+        }
+        
+        // Actualizar estadísticas
+        function updateStats() {
+            // Estadísticas por superficie
+            const surfaceStats = {};
+            matches.forEach(match => {
+                if (!surfaceStats[match.surface]) {
+                    surfaceStats[match.surface] = { wins: 0, losses: 0, total: 0 };
+                }
+                
+                surfaceStats[match.surface].total++;
+                if (match.result === 'win') {
+                    surfaceStats[match.surface].wins++;
+                } else {
+                    surfaceStats[match.surface].losses++;
+                }
+            });
+            
+            let surfaceStatsHTML = '';
+            for (const surface in surfaceStats) {
+                const stats = surfaceStats[surface];
+                const winPercentage = stats.total > 0 ? Math.round((stats.wins / stats.total) * 100) : 0;
+                surfaceStatsHTML += `
+                    <div class="stat">
+                        <span>${surface}:</span>
+                        <span class="stat-value">${stats.wins}-${stats.losses} (${winPercentage}%)</span>
+                    </div>
+                `;
+            }
+            
+            document.getElementById('surface-stats').innerHTML = surfaceStatsHTML || '<p>No hay datos por superficie</p>';
+            
+            // Estadísticas por torneo
+            const tournamentStats = {};
+            matches.forEach(match => {
+                const tournamentName = match.tournament || 'Amistoso';
+                if (!tournamentStats[tournamentName]) {
+                    tournamentStats[tournamentName] = { wins: 0, losses: 0, total: 0 };
+                }
+                
+                tournamentStats[tournamentName].total++;
+                if (match.result === 'win') {
+                    tournamentStats[tournamentName].wins++;
+                } else {
+                    tournamentStats[tournamentName].losses++;
+                }
+            });
+            
+            let tournamentStatsHTML = '';
+            for (const tournament in tournamentStats) {
+                const stats = tournamentStats[tournament];
+                const winPercentage = stats.total > 0 ? Math.round((stats.wins / stats.total) * 100) : 0;
+                tournamentStatsHTML += `
+                    <div class="stat">
+                        <span>${tournament}:</span>
+                        <span class="stat-value">${stats.wins}-${stats.losses} (${winPercentage}%)</span>
+                    </div>
+                `;
+            }
+            
+            document.getElementById('tournament-stats').innerHTML = tournamentStatsHTML || '<p>No hay datos por torneo</p>';
+        }
+        
+        // Actualizar gráfico de rendimiento
+        function updatePerformanceChart() {
+            const ctx = document.getElementById('performance-chart').getContext('2d');
+            
+            // Ordenar partidos por fecha
+            const sortedMatches = [...matches].sort((a, b) => new Date(a.date) - new Date(b.date));
+            
+            // Preparar datos para el gráfico
+            const labels = sortedMatches.map(match => formatDate(match.date));
+            const data = sortedMatches.map(match => match.result === 'win' ? 1 : 0);
+            
+            // Calcular promedio móvil de 5 partidos
+            const movingAvg = [];
+            for (let i = 0; i < data.length; i++) {
+                const start = Math.max(0, i - 4);
+                const subset = data.slice(start, i + 1);
+                const avg = subset.reduce((a, b) => a + b, 0) / subset.length;
+                movingAvg.push(avg * 100);
+            }
+            
+            // Destruir gráfico anterior si existe
+            if (window.performanceChart) {
+                window.performanceChart.destroy();
+            }
+            
+            // Crear nuevo gráfico
+            window.performanceChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Rendimiento (% victorias)',
+                        data: movingAvg,
+                        borderColor: '#3498db',
+                        backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            min: 0,
+                            max: 100,
+                            ticks: {
+                                callback: function(value) {
+                                    return value + '%';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Eliminar partido
+        function deleteMatch(matchId) {
+            if (confirm('¿Estás seguro de que quieres eliminar este partido?')) {
+                db.collection('matches').doc(matchId).delete()
+                    .then(() => {
+                        console.log('Partido eliminado');
+                    })
+                    .catch(error => {
+                        alert('Error al eliminar el partido: ' + error.message);
+                    });
+            }
+        }
+        
+        // Función para formatear fechas
+        function formatDate(dateString) {
+            const options = { year: 'numeric', month: 'short', day: 'numeric' };
+            return new Date(dateString).toLocaleDateString('es-ES', options);
+        }
+    </script>
+</body>
+</html>
